@@ -52,6 +52,30 @@ function downloadEmail(id) {
 }
 
 
+.popup {
+  visibility: hidden;
+  min-width: 250px;
+  background-color: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  text-align: center;
+  border-radius: 8px;
+  padding: 16px 24px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  opacity: 0;
+  font-size: 16px;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.popup.show {
+  visibility: visible;
+  opacity: 1;
+}
+
+
 
 
 
