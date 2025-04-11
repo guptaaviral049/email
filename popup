@@ -1,0 +1,62 @@
+<div id="popup" class="popup">Action successful!</div>
+
+.popup {
+  visibility: hidden;
+  min-width: 200px;
+  background-color: #333;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 12px;
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.popup.show {
+  visibility: visible;
+  opacity: 1;
+}
+
+
+function showPopup(message) {
+  const popup = document.getElementById("popup");
+  popup.innerText = message;
+  popup.classList.add("show");
+
+  setTimeout(() => {
+    popup.classList.remove("show");
+  }, 2000);
+}
+
+document.getElementById("refreshBtn").addEventListener("click", () => {
+  loadEmails();
+  showPopup("🔄 Data refreshed");
+});
+
+
+function downloadEmail(id) {
+  fetch(`/api/emails/${id}/download`)
+    .then((res) => res.blob())
+    .then((blob) => {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `email_${id}.eml`;
+      a.click();
+      showPopup("📩 Email downloaded");
+    })
+    .catch((error) => console.error("Error downloading email:", error));
+}
+
+
+
+
+
+
+
+
+
+
