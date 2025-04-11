@@ -1,0 +1,99 @@
+<div id="emailModal" class="modal">
+  <div class="modal-content">
+    <span class="close-btn" onclick="closeModal()">&times;</span>
+    <pre id="emailContent" class="email-preview">Loading...</pre>
+  </div>
+</div>
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 10000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+.modal-content {
+  background-color: #fefefe;
+  margin: 10% auto;
+  padding: 20px;
+  border-radius: 8px;
+  width: 80%;
+  max-height: 70%;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.close-btn {
+  color: #aaa;
+  position: absolute;
+  top: 12px;
+  right: 20px;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.email-preview {
+  white-space: pre-wrap;
+  font-family: monospace;
+  font-size: 14px;
+}
+
+<tr>
+  <td>${row.id}</td>
+  <td>${row.referenceId}</td>
+  <td>${row.classification}</td>
+  <td>${row.type}</td>
+  <td>${row.emailSubject}</td>
+  <td>${row.status}</td>
+  <td>${row.date}</td>
+  <td>
+    <button onclick="downloadEmail(${row.id})">Download</button>
+  </td>
+  <td>
+    <button onclick="showEmail(${row.id})">Show Email</button>
+  </td>
+</tr>
+
+function showEmail(id) {
+  fetch(`/api/emails/${id}/text`)
+    .then((res) => res.text())
+    .then((text) => {
+      document.getElementById("emailContent").innerText = text;
+      document.getElementById("emailModal").style.display = "block";
+      showPopup("📬 Email preview loaded");
+    })
+    .catch((err) => {
+      document.getElementById("emailContent").innerText = "Error loading email.";
+      showPopup("⚠️ Failed to load email");
+    });
+}
+
+function closeModal() {
+  document.getElementById("emailModal").style.display = "none";
+}
+
+@GetMapping("/api/emails/{id}/text")
+public ResponseEntity<String> getEmailText(@PathVariable Long id) throws IOException {
+    return emailDataRepository.findById(id)
+        .map(data -> {
+            try {
+                String content = new String(data.getEmail(), StandardCharsets.UTF_8);
+                return ResponseEntity.ok(content);
+            } catch (Exception e) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error reading email");
+            }
+        })
+        .orElse(ResponseEntity.notFound().build());
+}
+
+
+
+
+
