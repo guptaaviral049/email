@@ -306,5 +306,28 @@ function refreshData() {
 
 // Load data on page ready
 window.onload = loadEmails;
+------
+
+th, td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  border-right: 1px solid #e2e8f0; /* Partition line between columns */
+  text-align: left;
+  font-size: 16px; /* Increased font size */
+}
+
+th {
+  background-color: #f1f5f9;
+  font-weight: 700; /* Make heading bold */
+}
+
+tr:last-child td {
+  border-bottom: none; /* Clean last row border */
+}
+
+td:last-child, th:last-child {
+  border-right: none; /* Remove right border from last column */
+}
+
 
 
