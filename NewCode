@@ -1,0 +1,144 @@
+// EmailData.java (Entity)
+package com.example.emailviewer.entity;
+
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.time.LocalDate;
+
+@Entity
+@Getter
+@Setter
+@NoArgsConstructor
+public class EmailData {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private LocalDate date;
+    private String referenceId;
+    private String classification;
+    private String type;
+
+    @Lob
+    @Column(columnDefinition = "BYTEA")
+    private byte[] email; // .eml content
+
+    private String emailSubject;
+    private String status;
+}
+
+
+// EmailDataRepository.java
+package com.example.emailviewer.repository;
+
+import com.example.emailviewer.entity.EmailData;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface EmailDataRepository extends JpaRepository<EmailData, Long> {
+}
+
+
+// EmailDataService.java
+package com.example.emailviewer.service;
+
+import com.example.emailviewer.entity.EmailData;
+import com.example.emailviewer.repository.EmailDataRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class EmailDataService {
+
+    @Autowired
+    private EmailDataRepository repo;
+
+    public List<EmailData> getAllEmails() {
+        return repo.findAll();
+    }
+
+    public Optional<EmailData> getEmailById(Long id) {
+        return repo.findById(id);
+    }
+
+    public void uploadEmlFile(byte[] emailContent, String referenceId, String classification, String type, String emailSubject, String status) {
+        EmailData email = new EmailData();
+        email.setDate(LocalDate.now());
+        email.setReferenceId(referenceId);
+        email.setClassification(classification);
+        email.setType(type);
+        email.setEmail(emailContent); // ✅ Correct
+        email.setEmailSubject(emailSubject);
+        email.setStatus(status);
+
+        repo.save(email);
+    }
+}
+
+
+// EmailDataController.java
+package com.example.emailviewer.controller;
+
+import com.example.emailviewer.entity.EmailData;
+import com.example.emailviewer.service.EmailDataService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.*;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
+
+@RestController
+@RequestMapping("/api/emails")
+@CrossOrigin(origins = "*")
+public class EmailDataController {
+
+    @Autowired
+    private EmailDataService emailDataService;
+
+    @GetMapping
+    public List<EmailData> getAllEmails() {
+        return emailDataService.getAllEmails();
+    }
+
+    @GetMapping("/{id}/download")
+    public ResponseEntity<byte[]> downloadEmail(@PathVariable Long id) {
+        Optional<EmailData> emailOptional = emailDataService.getEmailById(id);
+        if (emailOptional.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        byte[] emailData = emailOptional.get().getEmail();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.setContentDisposition(ContentDisposition.attachment().filename("email_" + id + ".eml").build());
+
+        return new ResponseEntity<>(emailData, headers, HttpStatus.OK);
+    }
+
+    @PostMapping("/upload")
+    public ResponseEntity<String> uploadEml(
+            @RequestParam("email") MultipartFile email,
+            @RequestParam("referenceId") String referenceId,
+            @RequestParam("classification") String classification,
+            @RequestParam("type") String type,
+            @RequestParam("emailSubject") String emailSubject,
+            @RequestParam("status") String status) {
+        try {
+            byte[] emailData = email.getBytes();
+            emailDataService.uploadEmlFile(emailData, referenceId, classification, type, emailSubject, status);
+            return ResponseEntity.ok("Email data uploaded successfully.");
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload email data.");
+        }
+    }
+}
