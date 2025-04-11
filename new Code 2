@@ -1,0 +1,286 @@
+// EmailData.java (Entity)
+package com.example.emailviewer.entity;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.time.LocalDate;
+
+@Entity
+@Table(name = "email_data")
+@Getter
+@Setter
+@NoArgsConstructor
+public class EmailData {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "date", nullable = false)
+    private LocalDate date;
+
+    @Column(name = "reference_id", nullable = false)
+    private String referenceId;
+
+    @Column(name = "classification", nullable = false)
+    private String classification;
+
+    @Column(name = "type", nullable = false)
+    private String type;
+
+    @Lob
+    @Column(name = "email", nullable = false, columnDefinition = "BYTEA")
+    @JsonIgnore
+    private byte[] email;
+
+    @Column(name = "email_subject", nullable = false)
+    private String emailSubject;
+
+    @Column(name = "status", nullable = false)
+    private String status;
+}
+
+
+// EmailDataDto.java
+package com.example.emailviewer.dto;
+
+import lombok.Data;
+
+@Data
+public class EmailDataDto {
+    private Long id;
+    private String referenceId;
+    private String classification;
+    private String type;
+    private String emailSubject;
+    private String status;
+    private String date;
+}
+
+
+// EmailDataRepository.java
+package com.example.emailviewer.repository;
+
+import com.example.emailviewer.entity.EmailData;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface EmailDataRepository extends JpaRepository<EmailData, Long> {
+}
+
+
+// EmailDataService.java
+package com.example.emailviewer.service;
+
+import com.example.emailviewer.dto.EmailDataDto;
+import com.example.emailviewer.entity.EmailData;
+import com.example.emailviewer.repository.EmailDataRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+@Service
+public class EmailDataService {
+
+    @Autowired
+    private EmailDataRepository repo;
+
+    public List<EmailDataDto> getAllEmailDtos() {
+        return repo.findAll().stream().map(email -> {
+            EmailDataDto dto = new EmailDataDto();
+            dto.setId(email.getId());
+            dto.setReferenceId(email.getReferenceId());
+            dto.setClassification(email.getClassification());
+            dto.setType(email.getType());
+            dto.setEmailSubject(email.getEmailSubject());
+            dto.setStatus(email.getStatus());
+            dto.setDate(email.getDate().toString());
+            return dto;
+        }).collect(Collectors.toList());
+    }
+
+    public Optional<EmailData> getEmailById(Long id) {
+        return repo.findById(id);
+    }
+
+    public void uploadEmlFile(byte[] emailContent, String referenceId, String classification, String type, String emailSubject, String status) {
+        EmailData email = new EmailData();
+        email.setDate(LocalDate.now());
+        email.setReferenceId(referenceId);
+        email.setClassification(classification);
+        email.setType(type);
+        email.setEmail(emailContent);
+        email.setEmailSubject(emailSubject);
+        email.setStatus(status);
+
+        repo.save(email);
+    }
+}
+
+
+// EmailDataController.java
+package com.example.emailviewer.controller;
+
+import com.example.emailviewer.dto.EmailDataDto;
+import com.example.emailviewer.entity.EmailData;
+import com.example.emailviewer.service.EmailDataService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.*;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
+
+@RestController
+@RequestMapping("/api/emails")
+@CrossOrigin(origins = "*")
+public class EmailDataController {
+
+    @Autowired
+    private EmailDataService emailDataService;
+
+    @GetMapping
+    public List<EmailDataDto> getAllEmails() {
+        return emailDataService.getAllEmailDtos();
+    }
+
+    @GetMapping("/{id}/download")
+    public ResponseEntity<byte[]> downloadEmail(@PathVariable Long id) {
+        Optional<EmailData> emailOptional = emailDataService.getEmailById(id);
+        if (emailOptional.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        byte[] emailData = emailOptional.get().getEmail();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.setContentDisposition(ContentDisposition.attachment().filename("email_" + id + ".eml").build());
+
+        return new ResponseEntity<>(emailData, headers, HttpStatus.OK);
+    }
+
+    @PostMapping("/upload")
+    public ResponseEntity<String> uploadEml(
+            @RequestParam("email") MultipartFile email,
+            @RequestParam("referenceId") String referenceId,
+            @RequestParam("classification") String classification,
+            @RequestParam("type") String type,
+            @RequestParam("emailSubject") String emailSubject,
+            @RequestParam("status") String status) {
+        try {
+            byte[] emailData = email.getBytes();
+            emailDataService.uploadEmlFile(emailData, referenceId, classification, type, emailSubject, status);
+            return ResponseEntity.ok("Email data uploaded successfully.");
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload email data.");
+        }
+    }
+}
+
+
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Grid</title>
+  <style>
+    body { font-family: Arial; padding: 20px; background: #f8f8f8; }
+    h1 { text-align: center; }
+    table { width: 100%; border-collapse: collapse; background: white; }
+    th, td { padding: 12px; border: 1px solid #ddd; text-align: left; }
+    th { background: #f0f0f0; }
+    button { padding: 6px 12px; border: none; background: #007bff; color: white; cursor: pointer; border-radius: 4px; }
+    button:hover { background: #0056b3; }
+    form { margin-bottom: 20px; background: white; padding: 15px; border-radius: 6px; }
+    input, select { margin: 5px; padding: 6px; }
+  </style>
+</head>
+<body>
+
+<h1>Email Data Viewer</h1>
+
+<form id="uploadForm">
+  <input type="file" name="email" required>
+  <input type="text" name="referenceId" placeholder="Reference ID" required>
+  <input type="text" name="classification" placeholder="Classification" required>
+  <input type="text" name="type" placeholder="Type" required>
+  <input type="text" name="emailSubject" placeholder="Subject" required>
+  <input type="text" name="status" placeholder="Status" required>
+  <button type="submit">Upload Email</button>
+</form>
+
+<table id="emailTable">
+  <thead>
+    <tr>
+      <th>ID</th><th>Reference ID</th><th>Classification</th><th>Type</th>
+      <th>Subject</th><th>Status</th><th>Date</th><th>Download</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+  const tableBody = document.querySelector("#emailTable tbody");
+
+  function loadEmails() {
+    fetch("http://localhost:8080/api/emails")
+      .then(res => res.json())
+      .then(data => {
+        tableBody.innerHTML = "";
+        data.forEach(row => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${row.id}</td>
+            <td>${row.referenceId}</td>
+            <td>${row.classification}</td>
+            <td>${row.type}</td>
+            <td>${row.emailSubject}</td>
+            <td>${row.status}</td>
+            <td>${row.date}</td>
+            <td><button onclick="downloadEmail(${row.id})">Download</button></td>
+          `;
+          tableBody.appendChild(tr);
+        });
+      });
+  }
+
+  function downloadEmail(id) {
+    fetch(`http://localhost:8080/api/emails/${id}/download`)
+      .then(res => res.blob())
+      .then(blob => {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `email_${id}.eml`;
+        a.click();
+      });
+  }
+
+  document.getElementById("uploadForm").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    fetch("http://localhost:8080/api/emails/upload", {
+      method: "POST",
+      body: formData
+    })
+    .then(res => res.text())
+    .then(msg => {
+      alert(msg);
+      loadEmails();
+    });
+  });
+
+  loadEmails();
+</script>
+</body>
+</html>
