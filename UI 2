@@ -1,0 +1,25 @@
+<!-- Add this inside the <body>, above the <table> -->
+<div class="actions">
+  <button id="refreshBtn">🔄 Refresh</button>
+</div>
+
+.actions {
+  margin-bottom: 20px;
+  text-align: right;
+}
+
+#refreshBtn {
+  padding: 10px 16px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#refreshBtn:hover {
+  background-color: #218838;
+}
+
+document.getElementById("refreshBtn").addEventListener("click", loadEmails);
+
