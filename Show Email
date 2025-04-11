@@ -97,3 +97,62 @@ public ResponseEntity<String> getEmailText(@PathVariable Long id) throws IOExcep
 
 
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Email Viewer</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <h1>Email Dashboard</h1>
+    <button onclick="refreshData()">🔄 Refresh</button>
+  </header>
+
+  <!-- Popup Notification -->
+  <div id="popup" class="popup">Action successful!</div>
+
+  <!-- Email Table -->
+  <main>
+    <table>
+      <thead>
+        <tr>
+          <th onclick="sortTable('id')">ID</th>
+          <th onclick="sortTable('referenceId')">Reference ID</th>
+          <th onclick="sortTable('classification')">Classification</th>
+          <th onclick="sortTable('type')">Type</th>
+          <th onclick="sortTable('emailSubject')">Subject</th>
+          <th onclick="sortTable('status')">Status</th>
+          <th onclick="sortTable('date')">Date</th>
+          <th>Download</th>
+          <th>Show Email</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <!-- Filled by JS -->
+      </tbody>
+    </table>
+  </main>
+
+  <!-- Email Modal Popup -->
+  <div id="emailModal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal()">&times;</span>
+      <pre id="emailContent" class="email-preview">Loading...</pre>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
+
+
+
+
+
+
+
