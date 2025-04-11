@@ -1,0 +1,154 @@
+// File: src/main/resources/static/index.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Viewer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Email Data Viewer</h1>
+    <form id="uploadForm">
+      <input type="file" name="email" required>
+      <input type="text" name="referenceId" placeholder="Reference ID" required>
+      <input type="text" name="classification" placeholder="Classification" required>
+      <input type="text" name="type" placeholder="Type" required>
+      <input type="text" name="emailSubject" placeholder="Subject" required>
+      <input type="text" name="status" placeholder="Status" required>
+      <button type="submit">Upload Email</button>
+    </form>
+    <table id="emailTable">
+      <thead>
+        <tr>
+          <th>ID</th><th>Reference ID</th><th>Classification</th><th>Type</th>
+          <th>Subject</th><th>Status</th><th>Date</th><th>Download</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
+
+
+// File: src/main/resources/static/style.css
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f4f6f8;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 40px auto;
+  background-color: white;
+  padding: 25px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 30px;
+  color: #333;
+}
+
+form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 25px;
+}
+
+input[type="text"], input[type="file"] {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  flex: 1;
+}
+
+button {
+  padding: 10px 15px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+th {
+  background-color: #f0f0f0;
+}
+
+
+// File: src/main/resources/static/script.js
+const tableBody = document.querySelector("#emailTable tbody");
+
+function loadEmails() {
+  fetch("/api/emails")
+    .then(res => res.json())
+    .then(data => {
+      tableBody.innerHTML = "";
+      data.forEach(row => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row.id}</td>
+          <td>${row.referenceId}</td>
+          <td>${row.classification}</td>
+          <td>${row.type}</td>
+          <td>${row.emailSubject}</td>
+          <td>${row.status}</td>
+          <td>${row.date}</td>
+          <td><button onclick="downloadEmail(${row.id})">Download</button></td>
+        `;
+        tableBody.appendChild(tr);
+      });
+    });
+}
+
+function downloadEmail(id) {
+  fetch(`/api/emails/${id}/download`)
+    .then(res => res.blob())
+    .then(blob => {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `email_${id}.eml`;
+      a.click();
+    });
+}
+
+document.getElementById("uploadForm").addEventListener("submit", function(e) {
+  e.preventDefault();
+  const formData = new FormData(this);
+  fetch("/api/emails/upload", {
+    method: "POST",
+    body: formData
+  })
+  .then(res => res.text())
+  .then(msg => {
+    alert(msg);
+    loadEmails();
+  });
+});
+
+loadEmails();
