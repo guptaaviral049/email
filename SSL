@@ -1,0 +1,54 @@
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.web.client.RestTemplate;
+import javax.net.ssl.*;
+import java.security.cert.X509Certificate;
+
+public class UnsafeRestTemplate {
+
+    public static RestTemplate getUnsafeRestTemplate() throws Exception {
+        // Create a trust manager that does not validate certificate chains
+        TrustManager[] trustAllCerts = new TrustManager[]{
+            new X509TrustManager() {
+                public X509Certificate[] getAcceptedIssuers() { return new X509Certificate[0]; }
+                public void checkClientTrusted(X509Certificate[] certs, String authType) {}
+                public void checkServerTrusted(X509Certificate[] certs, String authType) {}
+            }
+        };
+
+        // Install the all-trusting trust manager
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+
+        // Create an SSLConnectionSocketFactory with the all-trusting manager
+        SSLConnectionSocketFactory csf = new SSLConnectionSocketFactory(sslContext, NoopHostnameVerifier.INSTANCE);
+
+        // Create HttpClient that uses the custom SSL context
+        CloseableHttpClient httpClient = HttpClients.custom()
+                .setSSLSocketFactory(csf)
+                .build();
+
+        HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
+        requestFactory.setHttpClient(httpClient);
+
+        return new RestTemplate(requestFactory);
+    }
+}
+
+
+----------------------------------------------------
+
+<dependency>
+    <groupId>org.apache.httpcomponents</groupId>
+    <artifactId>httpclient</artifactId>
+    <version>4.5.14</version> <!-- or the latest stable version -->
+</dependency>
+You might also want this if you're using advanced SSL context configurations:
+
+<dependency>
+    <groupId>org.apache.httpcomponents</groupId>
+    <artifactId>httpcore</artifactId>
+    <version>4.4.16</version> <!-- version should match or be compatible -->
+</dependency>
+
+
+
