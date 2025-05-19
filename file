@@ -1,0 +1,10 @@
+public MultipartFile fetchFileAsMultipart(String folderPath, String fileName) throws IOException {
+        File file = new File(folderPath, fileName);
+        try (FileInputStream input = new FileInputStream(file)) {
+            return new MockMultipartFile(
+                file.getName(),                    // name
+                file.getName(),                    // original filename
+                "application/octet-stream",        // content type (can be refined)
+                input                              // file content stream
+            );
+        }
