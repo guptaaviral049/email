@@ -1,4 +1,13 @@
-public MultipartFile fetchFileAsMultipart(String folderPath, String fileName) throws IOException {
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.mock.web.MockMultipartFile;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+
+public class FileUtil {
+
+    public MultipartFile fetchFileAsMultipart(String folderPath, String fileName) throws IOException {
         File file = new File(folderPath, fileName);
         try (FileInputStream input = new FileInputStream(file)) {
             return new MockMultipartFile(
@@ -8,3 +17,17 @@ public MultipartFile fetchFileAsMultipart(String folderPath, String fileName) th
                 input                              // file content stream
             );
         }
+    }
+}
+
+
+<!-- For MockMultipartFile -->
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-test</artifactId>
+    <version>${spring.version}</version>
+    <scope>test</scope> <!-- change to compile if using outside tests -->
+</dependency>
+
+
+
